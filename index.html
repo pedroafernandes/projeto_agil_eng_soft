@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetCare — MVP Sprint</title>
+<style>
+  :root {
+    --primaria: #2f7d6d;
+    --primaria-clara: #e3f2ee;
+    --erro: #c0392b;
+    --erro-claro: #fdecea;
+    --sucesso: #1e8449;
+    --sucesso-claro: #e8f6ee;
+    --texto: #1f2933;
+    --cinza: #6b7280;
+    --borda: #e5e7eb;
+    --fundo: #f6f7f9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fundo); color: var(--texto); }
+  header { background: var(--primaria); color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .usuario { font-size: 14px; opacity: .95; }
+  .layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid var(--borda); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 18px; }
+  .card h3 { margin: 16px 0 8px; font-size: 15px; color: var(--primaria); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--borda); }
+  th { color: var(--cinza); font-weight: 600; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 14px; font-size: 14px; background: var(--primaria); color: #fff; }
+  button.secundario { background: #fff; color: var(--primaria); border: 1px solid var(--primaria); }
+  button:disabled { background: #bbb; cursor: not-allowed; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: var(--primaria-clara); color: var(--primaria); }
+  .tag.alerta { background: var(--erro-claro); color: var(--erro); }
+  .alerta-box { padding: 12px 14px; border-radius: 8px; margin-bottom: 14px; font-weight: 600; }
+  .alerta-box.erro { background: var(--erro-claro); color: var(--erro); border: 1px solid var(--erro); }
+  .alerta-box.sucesso { background: var(--sucesso-claro); color: var(--sucesso); border: 1px solid var(--sucesso); }
+  .grid-dados { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; font-size: 14px; }
+  .grid-dados span { color: var(--cinza); display: block; font-size: 12px; }
+  form label { display: block; font-size: 14px; margin-bottom: 4px; font-weight: 600; }
+  form input, form select, form textarea { width: 100%; padding: 8px; border: 1px solid var(--borda); border-radius: 6px; font-size: 14px; margin-bottom: 12px; font-family: inherit; }
+  form .linha { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .campo-erro { border-color: var(--erro) !important; }
+  .notificacao { border-left: 4px solid var(--primaria); background: var(--primaria-clara); padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; }
+  .notificacao small { color: var(--cinza); display: block; margin-top: 4px; }
+  .vazio { color: var(--cinza); font-size: 14px; }
+  .acoes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐾 PetCare — MVP Sprint</h1>
+  <div class="usuario">Logada como: <strong>Dra. Márcia</strong> (Veterinária)</div>
+</header>
+
+<div class="layout">
+  <main id="conteudo"></main>
+
+  <aside>
+    <div class="card">
+      <h2>🔔 Notificações do tutor</h2>
+      <p class="vazio" style="margin-top:-6px">Simula o que o tutor recebe no app dele.</p>
+      <div id="notificacoes"><p class="vazio">Nenhuma notificação ainda.</p></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* =========================================================
+   DADOS MOCKADOS (simulam o banco de dados)
+   ========================================================= */
+const usuarioLogado = { id: 'vet1', nome: 'Dra. Márcia', tipo: 'veterinaria' };
+
+const tutores = [
+  { id: 't1', nome: 'Carlos Souza' },
+  { id: 't2', nome: 'Juliana Lima' },
+];
+
+const pets = [
+  {
+    id: 'p1', nome: 'Thor', especie: 'Cachorro', raca: 'Labrador', idade: '4 anos', peso: '32 kg', tutorId: 't1',
+    alergias: ['Dipirona'],
+    vacinas: [
+      { nome: 'V10', data: '10/03/2026' },
+      { nome: 'Antirrábica', data: '15/04/2026' },
+    ],
+    historico: [
+      { data: '20/05/2026', tipo: 'Consulta', descricao: 'Check-up anual — saudável' },
+      { data: '02/08/2026', tipo: 'Banho e tosa', descricao: 'Serviço de estética' },
+    ],
+    prescricoes: [],
+  },
+  {
+    id: 'p2', nome: 'Mel', especie: 'Gato', raca: 'SRD', idade: '2 anos', peso: '4 kg', tutorId: 't2',
+    alergias: [],
+    vacinas: [{ nome: 'V4 felina', data: '12/01/2026' }],
+    historico: [{ data: '12/01/2026', tipo: 'Consulta', descricao: 'Vacinação' }],
+    prescricoes: [],
+  },
+];
+
+// Agendamentos: só quem tem agendamento com o pet pode ver o perfil dele
+const agendamentos = [
+  { id: 'a1', vetId: 'vet1', petId: 'p1', data: '07/10/2026', hora: '14:00', status: 'em_andamento' },
+  // A Dra. Márcia NÃO tem agendamento com a Mel (p2) -> cenário de falha da história 2
+];
+
+const notificacoes = [];
+
+/* =========================================================
+   REGRAS DE NEGÓCIO
+   ========================================================= */
+
+// HISTÓRIA 2 — só acessa o perfil se tiver agendamento com o pet
+function temAgendamento(vetId, petId) {
+  return agendamentos.some(a => a.vetId === vetId && a.petId === petId);
+}
+
+function buscarAgendamento(vetId, petId) {
+  return agendamentos.find(a => a.vetId === vetId && a.petId === petId);
+}
+
+// HISTÓRIA 1 — validação da prescrição
+function validarPrescricao(dados) {
+  const erros = {};
+  if (!dados.medicamento.trim()) erros.medicamento = 'Medicamento é obrigatório';
+  if (!dados.dosagem.trim())     erros.dosagem     = 'Dosagem é obrigatória';
+  if (!dados.frequencia.trim())  erros.frequencia  = 'Frequência é obrigatória';
+  if (!dados.duracao.trim())     erros.duracao     = 'Duração é obrigatória';
+  return erros;
+}
+
+function emitirPrescricao(pet, dados) {
+  const prescricao = { ...dados, data: new Date().toLocaleString('pt-BR'), veterinaria: usuarioLogado.nome };
+  pet.prescricoes.unshift(prescricao);                 // salva no histórico do pet
+  pet.historico.unshift({ data: new Date().toLocaleDateString('pt-BR'), tipo: 'Prescrição', descricao: `${dados.medicamento} — ${dados.dosagem}` });
+
+  const tutor = tutores.find(t => t.id === pet.tutorId);
+  notificacoes.unshift({                               // notifica o tutor
+    tutor: tutor.nome,
+    texto: `Nova prescrição para ${pet.nome}: ${dados.medicamento}, ${dados.dosagem}, ${dados.frequencia}, por ${dados.duracao}.`,
+    data: prescricao.data,
+  });
+  renderNotificacoes();
+}
+
+/* =========================================================
+   TELAS
+   ========================================================= */
+const conteudo = document.getElementById('conteudo');
+const nomeTutor = id => tutores.find(t => t.id === id).nome;
+
+// Tela inicial: agenda + lista de pets cadastrados
+function telaInicial(mensagem) {
+  const meusAgendamentos = agendamentos.filter(a => a.vetId === usuarioLogado.id);
+
+  conteudo.innerHTML = `
+    ${mensagem || ''}
+    <div class="card">
+      <h2>📅 Meus agendamentos de hoje</h2>
+      <table>
+        <tr><th>Horário</th><th>Pet</th><th>Tutor</th><th>Status</th></tr>
+        ${meusAgendamentos.map(a => {
+          const pet = pets.find(p => p.id === a.petId);
+          return `<tr><td>${a.hora}</td><td>${pet.nome}</td><td>${nomeTutor(pet.tutorId)}</td>
+                  <td><span class="tag">${a.status === 'concluido' ? 'Concluído' : 'Em andamento'}</span></td></tr>`;
+        }).join('')}
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>🐶 Pets cadastrados no sistema</h2>
+      <table>
+        <tr><th>Nome</th><th>Espécie</th><th>Tutor</th><th></th></tr>
+        ${pets.map(p => `
+          <tr><td>${p.nome}</td><td>${p.especie}</td><td>${nomeTutor(p.tutorId)}</td>
+          <td><button onclick="abrirPerfil('${p.id}')">Abrir perfil</button></td></tr>`).join('')}
+      </table>
+    </div>`;
+}
+
+// HISTÓRIA 2 — Acessar pet já cadastrado
+function abrirPerfil(petId, mensagem) {
+  const pet = pets.find(p => p.id === petId);
+
+  // FALHA: sem agendamento -> bloqueia e não mostra os dados
+  if (!temAgendamento(usuarioLogado.id, petId)) {
+    telaInicial(`<div class="alerta-box erro">⛔ Acesso não permitido</div>`);
+    return;
+  }
+
+  // SUCESSO: mostra dados + histórico
+  const agendamento = buscarAgendamento(usuarioLogado.id, petId);
+  const concluido = agendamento.status === 'concluido';
+
+  conteudo.innerHTML = `
+    ${mensagem || ''}
+    <div class="card">
+      <button class="secundario" onclick="telaInicial()">← Voltar</button>
+      <h2 style="margin-top:14px">Perfil de ${pet.nome}</h2>
+      <div class="grid-dados">
+        <div><span>Espécie</span>${pet.especie}</div>
+        <div><span>Raça</span>${pet.raca}</div>
+        <div><span>Idade</span>${pet.idade}</div>
+        <div><span>Peso</span>${pet.peso}</div>
+        <div><span>Tutor</span>${nomeTutor(pet.tutorId)}</div>
+      </div>
+
+      <h3>⚠️ Alergias</h3>
+      ${pet.alergias.length ? pet.alergias.map(a => `<span class="tag alerta">${a}</span>`).join(' ') : '<p class="vazio">Nenhuma alergia registrada.</p>'}
+
+      <h3>💉 Vacinas</h3>
+      <table><tr><th>Vacina</th><th>Data</th></tr>
+        ${pet.vacinas.map(v => `<tr><td>${v.nome}</td><td>${v.data}</td></tr>`).join('')}
+      </table>
+
+      <h3>📋 Histórico de atendimentos e serviços</h3>
+      <table><tr><th>Data</th><th>Tipo</th><th>Descrição</th></tr>
+        ${pet.historico.map(h => `<tr><td>${h.data}</td><td>${h.tipo}</td><td>${h.descricao}</td></tr>`).join('')}
+      </table>
+
+      <h3>💊 Prescrições</h3>
+      ${pet.prescricoes.length ? `
+        <table><tr><th>Medicamento</th><th>Dosagem</th><th>Frequência</th><th>Duração</th><th>Emitida em</th></tr>
+          ${pet.prescricoes.map(p => `<tr><td>${p.medicamento}</td><td>${p.dosagem}</td><td>${p.frequencia}</td><td>${p.duracao}</td><td>${p.data}</td></tr>`).join('')}
+        </table>` : '<p class="vazio">Nenhuma prescrição emitida.</p>'}
+
+      <div class="acoes">
+        ${concluido
+          ? `<span class="tag">✔ Atendimento concluído</span>`
+          : `<button class="secundario" onclick="concluirAtendimento('${pet.id}')">Concluir atendimento</button>`}
+        <button ${concluido ? '' : 'disabled title="Conclua o atendimento primeiro"'} onclick="telaPrescricao('${pet.id}')">Emitir prescrição</button>
+      </div>
+    </div>`;
+}
+
+function concluirAtendimento(petId) {
+  buscarAgendamento(usuarioLogado.id, petId).status = 'concluido';
+  abrirPerfil(petId);
+}
+
+// HISTÓRIA 1 — Emitir prescrição digital
+function telaPrescricao(petId, erros = {}, valores = {}) {
+  const pet = pets.find(p => p.id === petId);
+  const v = { medicamento: '', dosagem: '', frequencia: '', duracao: '', observacoes: '', ...valores };
+  const listaErros = Object.values(erros);
+
+  conteudo.innerHTML = `
+    <div class="card">
+      <button class="secundario" onclick="abrirPerfil('${pet.id}')">← Voltar ao perfil</button>
+      <h2 style="margin-top:14px">Emitir prescrição — ${pet.nome}</h2>
+      ${listaErros.length ? `<div class="alerta-box erro">${listaErros.map(e => '❌ ' + e).join('<br>')}</div>` : ''}
+      ${pet.alergias.length ? `<p>Alergias: ${pet.alergias.map(a => `<span class="tag alerta">${a}</span>`).join(' ')}</p>` : ''}
+      <form id="formPrescricao" novalidate>
+        <label for="medicamento">Medicamento *</label>
+        <input id="medicamento" value="${v.medicamento}" class="${erros.medicamento ? 'campo-erro' : ''}" placeholder="Ex.: Amoxicilina 250mg">
+
+        <div class="linha">
+          <div>
+            <label for="dosagem">Dosagem *</label>
+            <input id="dosagem" value="${v.dosagem}" class="${erros.dosagem ? 'campo-erro' : ''}" placeholder="Ex.: 1 comprimido">
+          </div>
+          <div>
+            <label for="frequencia">Frequência *</label>
+            <input id="frequencia" value="${v.frequencia}" class="${erros.frequencia ? 'campo-erro' : ''}" placeholder="Ex.: a cada 12 horas">
+          </div>
+        </div>
+
+        <label for="duracao">Duração *</label>
+        <input id="duracao" value="${v.duracao}" class="${erros.duracao ? 'campo-erro' : ''}" placeholder="Ex.: 7 dias">
+
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" rows="2" placeholder="Opcional">${v.observacoes}</textarea>
+
+        <button type="submit">Confirmar e emitir</button>
+      </form>
+    </div>`;
+
+  document.getElementById('formPrescricao').addEventListener('submit', e => {
+    e.preventDefault();
+    const dados = {
+      medicamento: document.getElementById('medicamento').value,
+      dosagem:     document.getElementById('dosagem').value,
+      frequencia:  document.getElementById('frequencia').value,
+      duracao:     document.getElementById('duracao').value,
+      observacoes: document.getElementById('observacoes').value,
+    };
+
+    const errosValidacao = validarPrescricao(dados);
+
+    // FALHA: algum campo obrigatório vazio (ex.: dosagem) -> não emite
+    if (Object.keys(errosValidacao).length) {
+      telaPrescricao(petId, errosValidacao, dados);
+      return;
+    }
+
+    // SUCESSO: salva no histórico e notifica o tutor
+    emitirPrescricao(pet, dados);
+    abrirPerfil(petId, `<div class="alerta-box sucesso">✅ Prescrição emitida com sucesso! O tutor ${nomeTutor(pet.tutorId)} foi notificado.</div>`);
+  });
+}
+
+function renderNotificacoes() {
+  const div = document.getElementById('notificacoes');
+  div.innerHTML = notificacoes.length
+    ? notificacoes.map(n => `<div class="notificacao"><strong>Para: ${n.tutor}</strong><br>${n.texto}<small>${n.data}</small></div>`).join('')
+    : '<p class="vazio">Nenhuma notificação ainda.</p>';
+}
+
+telaInicial();
+</script>
+</body>
+</html>
